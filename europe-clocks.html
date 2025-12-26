@@ -102,6 +102,43 @@
             transform: translateX(-50%);
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -109,6 +146,10 @@
 
     <div id="map-container">
         <div id="europe-map"></div>
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
+            <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -210,6 +251,15 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Zoom controls functionality
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            map.setZoom(map.getZoom() + 1);
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            map.setZoom(map.getZoom() - 1);
+        });
     </script>
 </body>
 </html>
