@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>European Capitals Time</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        #map-container {
+            position: relative;
+            width: 90%;
+            height: 80vh;
+            max-width: 1400px;
+            background: #e8f4f8;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        #europe-map {
+            width: 100%;
+            height: 100%;
+            background: white;
+        }
+
+        .leaflet-container {
+            background: white;
+        }
+
+        .leaflet-control-container {
+            display: none;
+        }
+
+        .capital {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .capital:hover {
+            transform: scale(1.1);
+        }
+
+        .leaflet-marker-pane .capital {
+            position: absolute;
+        }
+
+        .capital-name {
+            font-weight: bold;
+            font-size: 10px;
+            color: #2c3e50;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 8px;
+            margin-bottom: 3px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        .clock {
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            color: #00ff88;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid #1a252f;
+            min-width: 75px;
+            text-align: center;
+        }
+
+        .marker {
+            width: 8px;
+            height: 8px;
+            background: #e74c3c;
+            border-radius: 50%;
+            border: 2px solid white;
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1>Current Time in European Capitals</h1>
+
+    <div id="map-container">
+        <div id="europe-map"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // Capital cities data with accurate coordinates
+        const capitals = [
+            { name: 'London', lat: 51.5074, lng: -0.1278, timezone: 'Europe/London' },
+            { name: 'Paris', lat: 48.8566, lng: 2.3522, timezone: 'Europe/Paris' },
+            { name: 'Berlin', lat: 52.5200, lng: 13.4050, timezone: 'Europe/Berlin' },
+            { name: 'Madrid', lat: 40.4168, lng: -3.7038, timezone: 'Europe/Madrid' },
+            { name: 'Rome', lat: 41.9028, lng: 12.4964, timezone: 'Europe/Rome' },
+            { name: 'Vienna', lat: 48.2082, lng: 16.3738, timezone: 'Europe/Vienna' },
+            { name: 'Warsaw', lat: 52.2297, lng: 21.0122, timezone: 'Europe/Warsaw' },
+            { name: 'Budapest', lat: 47.4979, lng: 19.0402, timezone: 'Europe/Budapest' },
+            { name: 'Bucharest', lat: 44.4268, lng: 26.1025, timezone: 'Europe/Bucharest' }
+        ];
+
+        // Initialize Leaflet map
+        const map = L.map('europe-map', {
+            center: [50, 10],
+            zoom: 4,
+            zoomControl: false,
+            dragging: false,
+            touchZoom: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false
+        });
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Function to update clock for a specific timezone
+        function updateClock(element, timezone) {
+            const now = new Date();
+            const options = {
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+
+            const timeString = now.toLocaleTimeString('en-GB', options);
+            element.textContent = timeString;
+        }
+
+        // Create markers for each capital
+        capitals.forEach((capital, index) => {
+            const html = `
+                <div class="capital">
+                    <div class="marker"></div>
+                    <div class="capital-name">${capital.name}</div>
+                    <div class="clock" id="clock-${index}">--:--:--</div>
+                </div>
+            `;
+
+            const marker = L.marker([capital.lat, capital.lng], {
+                icon: L.divIcon({
+                    html: html,
+                    className: '',
+                    iconSize: [100, 80],
+                    iconAnchor: [50, 4],
+                    popupAnchor: [0, -80]
+                })
+            }).addTo(map);
+
+            // Store reference to clock element and timezone
+            marker.clockIndex = index;
+            marker.timezone = capital.timezone;
+        });
+
+        // Function to update all clocks
+        function updateAllClocks() {
+            capitals.forEach((capital, index) => {
+                const clockElement = document.getElementById(`clock-${index}`);
+                if (clockElement) {
+                    updateClock(clockElement, capital.timezone);
+                }
+            });
+        }
+
+        // Update clocks immediately and then every second
+        updateAllClocks();
+        setInterval(updateAllClocks, 1000);
+
+        // Add pulse animation to markers
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+            }
+            .marker {
+                animation: pulse 2s ease-in-out infinite;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
