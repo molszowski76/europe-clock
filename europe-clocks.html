@@ -294,6 +294,11 @@
                     })
                 }).addTo(map);
 
+                // Add hover event listeners to bring marker to front
+                marker.on('mouseover', function() {
+                    this.bringToFront();
+                });
+
                 currentMarkers.push(marker);
             });
 
