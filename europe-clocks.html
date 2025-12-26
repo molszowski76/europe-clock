@@ -175,6 +175,122 @@
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
         }
+
+        /* Analogue Clock Styles */
+        #analogue-clock {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            /* Positioned in corner to avoid blocking map center */
+            pointer-events: auto;
+        }
+
+        .clock-face {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: white;
+            border: 8px solid black;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+            /* Ensure clock face itself catches pointer events */
+            pointer-events: auto;
+        }
+
+        .clock-center {
+            width: 16px;
+            height: 16px;
+            background: black;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: black;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .hour-hand {
+            width: 6px;
+            height: 50px;
+            margin-left: -3px;
+            z-index: 3;
+        }
+
+        .minute-hand {
+            width: 4px;
+            height: 70px;
+            margin-left: -2px;
+            z-index: 4;
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 80px;
+            margin-left: -1px;
+            background: #333;
+            z-index: 5;
+        }
+
+        .clock-number {
+            position: absolute;
+            font-size: 16px;
+            font-weight: bold;
+            color: black;
+            font-family: 'Georgia', serif;
+        }
+
+        .clock-tick {
+            position: absolute;
+            background: black;
+        }
+
+        .major-tick {
+            width: 3px;
+            height: 12px;
+        }
+
+        .minor-tick {
+            width: 1px;
+            height: 6px;
+        }
+
+        .clock-label {
+            position: absolute;
+            top: 75%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+            font-family: 'Georgia', serif;
+        }
+
+        /* Screen reader only class for accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
     </style>
 </head>
 <body>
@@ -193,6 +309,18 @@
         <div class="zoom-controls">
             <button class="zoom-btn" id="zoom-in" title="Zoom In">+</button>
             <button class="zoom-btn" id="zoom-out" title="Zoom Out">−</button>
+        </div>
+
+        <!-- Analogue Clock for Warsaw Time -->
+        <div id="analogue-clock" role="img" aria-label="Analogue clock showing Warsaw time">
+            <div class="clock-face">
+                <div class="clock-label">WARSAW</div>
+                <span class="sr-only" id="clock-time-text" aria-live="polite">Loading Warsaw time...</span>
+                <div class="hand hour-hand" id="hour-hand"></div>
+                <div class="hand minute-hand" id="minute-hand"></div>
+                <div class="hand second-hand" id="second-hand"></div>
+                <div class="clock-center"></div>
+            </div>
         </div>
     </div>
 
@@ -358,6 +486,104 @@
         document.getElementById('zoom-out').addEventListener('click', () => {
             map.setZoom(map.getZoom() - 1);
         });
+
+        // Analogue Clock for Warsaw Time
+        function updateAnalogueClock() {
+            const now = new Date();
+
+            // Get Warsaw time using proper timezone-aware methods
+            const hours = parseInt(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw', hour: 'numeric', hour12: false }));
+            const minutes = parseInt(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw', minute: 'numeric' }));
+            const seconds = parseInt(now.toLocaleString('en-US', { timeZone: 'Europe/Warsaw', second: 'numeric' }));
+
+            // Calculate degrees for each hand
+            const secondDegrees = (seconds / 60) * 360;
+            const minuteDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
+            const hourDegrees = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
+
+            // Apply rotation to hands
+            document.getElementById('second-hand').style.transform = `rotate(${secondDegrees}deg)`;
+            document.getElementById('minute-hand').style.transform = `rotate(${minuteDegrees}deg)`;
+            document.getElementById('hour-hand').style.transform = `rotate(${hourDegrees}deg)`;
+
+            // Update screen reader text for accessibility
+            const timeText = document.getElementById('clock-time-text');
+            if (timeText) {
+                const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                timeText.textContent = `Warsaw time: ${formattedTime}`;
+            }
+        }
+
+        // Create clock numbers and tick marks
+        function initializeAnalogueClock() {
+            const clockFace = document.querySelector('.clock-face');
+            if (!clockFace) return;
+
+            // Calculate radius dynamically based on actual clock face dimensions
+            const radius = clockFace.offsetWidth / 2;
+
+            // Constants for positioning
+            const NUMBER_OFFSET = 25;      // Distance of hour numbers from edge
+            const MAJOR_TICK_OFFSET = 6;   // Distance of major tick marks from edge
+            const MINOR_TICK_OFFSET = 3;   // Distance of minor tick marks from edge
+
+            // Add hour numbers (12, 3, 6, 9)
+            const hourPositions = [
+                { num: 12, angle: 0 },
+                { num: 3, angle: 90 },
+                { num: 6, angle: 180 },
+                { num: 9, angle: 270 }
+            ];
+
+            hourPositions.forEach(pos => {
+                const number = document.createElement('div');
+                number.className = 'clock-number';
+                number.textContent = pos.num;
+
+                const angle = (pos.angle - 90) * (Math.PI / 180);
+                const x = radius + (radius - NUMBER_OFFSET) * Math.cos(angle);
+                const y = radius + (radius - NUMBER_OFFSET) * Math.sin(angle);
+
+                number.style.left = `${x}px`;
+                number.style.top = `${y}px`;
+                number.style.transform = 'translate(-50%, -50%)';
+
+                clockFace.appendChild(number);
+            });
+
+            // Add tick marks
+            for (let i = 0; i < 60; i++) {
+                const tick = document.createElement('div');
+                tick.className = 'clock-tick';
+
+                if (i % 5 === 0) {
+                    tick.classList.add('major-tick');
+                } else {
+                    tick.classList.add('minor-tick');
+                }
+
+                const angle = (i * 6 - 90) * (Math.PI / 180);
+                const tickRadius = i % 5 === 0 ? radius - MAJOR_TICK_OFFSET : radius - MINOR_TICK_OFFSET;
+                const x = radius + tickRadius * Math.cos(angle);
+                const y = radius + tickRadius * Math.sin(angle);
+
+                tick.style.left = `${x}px`;
+                tick.style.top = `${y}px`;
+                tick.style.transform = `translate(-50%, -50%) rotate(${i * 6}deg)`;
+                tick.style.transformOrigin = 'center';
+
+                clockFace.appendChild(tick);
+            }
+
+            // Initial update
+            updateAnalogueClock();
+        }
+
+        // Initialize the analogue clock
+        initializeAnalogueClock();
+
+        // Update analogue clock every second
+        setInterval(updateAnalogueClock, 1000);
     </script>
 </body>
 </html>
