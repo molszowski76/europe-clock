@@ -294,9 +294,12 @@
                     })
                 }).addTo(map);
 
-                // Add hover event listeners to bring marker to front
+                // Add hover event listeners to adjust marker stacking using zIndexOffset
                 marker.on('mouseover', function() {
-                    this.bringToFront();
+                    this.setZIndexOffset(1000);
+                });
+                marker.on('mouseout', function() {
+                    this.setZIndexOffset(0);
                 });
 
                 currentMarkers.push(marker);
